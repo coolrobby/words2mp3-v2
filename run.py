@@ -4,7 +4,7 @@ import edge_tts
 import streamlit as st
 import zipfile
 import io
-from pydub import AudioSegment
+from IPython.display import Audio
 
 # 设置输出目录
 output_dir = "output"
@@ -38,22 +38,31 @@ input_type = st.sidebar.selectbox("选择字号", ["大号", "正常"])
 input_text = st.text_area("请输入内容（每行一个）:")
 
 # 初始化 edge-tts
-async def text_to_speech(text):
+async def text_to_speech(text, output_file):
     try:
         tts = edge_tts.Communicate(text, voice=voice)
-        return tts.save_to_memory()
+        await tts.save(output_file)
     except edge_tts.exceptions.NoAudioReceived:
         st.warning(f"无法生成音频: {text}")
 
-# 处理输入的内容，生成单个的音频文件并合并
-async def generate_and_combine_audio_files(words):
-    combined_audio = AudioSegment.empty()
+# 处理输入的内容，生成语音文件
+async def generate_audio_files(words):
+    audio_files = []
     for word in words:
         if word.strip():  # 确保不处理空行
-            audio_bytes = await text_to_speech(word.strip())
-            audio_segment = AudioSegment.from_mp3(io.BytesIO(audio_bytes))
-            combined_audio += audio_segment + AudioSegment.silent(duration=1000)  # 添加1秒间隔
-    return combined_audio
+            filename = word.strip().replace(" ", "_")  # 替换空格
+            output_file = os.path.join(output_dir, f"{filename}.mp3")
+            await text_to_speech(word.strip(), output_file)
+            if os.path.exists(output_file):  # 确保文件成功生成
+                audio_files.append((output_file, word.strip()))  # 保存文件和对应文本
+    return audio_files
+
+# 生成单个 MP3 文件并提供试听和下载
+async def generate_single_mp3(input_text):
+    output_file = os.path.join(output_dir, "combined.mp3")
+    tts = edge_tts.Communicate(input_text, voice=voice)
+    await tts.save(output_file)
+    return output_file
 
 # 开始生成音频文件
 if st.button("生成语音文件"):
@@ -61,19 +70,24 @@ if st.button("生成语音文件"):
         words = input_text.splitlines()
         with st.spinner("生成中，请稍候..."):
             import asyncio
-            combined_audio = asyncio.run(generate_and_combine_audio_files(words))
+            # 如果输入内容有多行，则生成多个音频文件并合并为一个 MP3
+            if len(words) > 1:
+                audio_files = asyncio.run(generate_audio_files(words))
+                combined_text = '\n'.join([text for _, text in audio_files])
+                output_file = await generate_single_mp3(combined_text)
+            else:
+                output_file = await generate_single_mp3(input_text)
         st.success("语音文件生成完毕！")
 
-        # 提供试听功能和显示文本
-        for word in words:
-            if word.strip():
-                st.markdown(f"<p style='font-size: 16px;'><strong>{word.strip()}</strong></p>", unsafe_allow_html=True)
+        # 设置字体大小
+        font_size = "16px" if input_type == "正常" else "50px"
+
+        # 提供试听功能
+        st.audio(output_file)
 
         # 下载链接
-        if combined_audio:
-            combined_audio.export("combined_audio.mp3", format="mp3")
-            with open("combined_audio.mp3", 'rb') as f:
-                st.download_button("下载为单个音频", f, "combined_audio.mp3", "audio/mp3")
+        with open(output_file, 'rb') as f:
+            st.download_button("下载音频文件", f, "combined.mp3", "audio/mpeg")
     else:
         st.warning("请输入内容。")
 

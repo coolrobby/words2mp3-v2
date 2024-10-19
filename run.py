@@ -1,8 +1,6 @@
 import os
 import edge_tts
 import streamlit as st
-import zipfile
-import io
 
 # 设置输出目录
 output_dir = "output"
@@ -40,26 +38,30 @@ async def text_to_speech(text, output_file):
     except edge_tts.exceptions.NoAudioReceived:
         st.warning(f"无法生成音频: {text}")
 
-# 生成语音文件
-if st.button("生成语音文件"):
+# 生成语音文件的函数
+async def generate_audio():
     if input_text:
         output_file = os.path.join(output_dir, "output.mp3")
-        with st.spinner("生成中，请稍候..."):
-            import asyncio
-            await text_to_speech(input_text, output_file)
+        await text_to_speech(input_text, output_file)
+        return output_file
+    else:
+        st.warning("请输入内容。")
+        return None
 
-        st.success("语音文件生成完毕！")
+# 开始生成音频文件
+if st.button("生成语音文件"):
+    with st.spinner("生成中，请稍候..."):
+        import asyncio
+        output_file = asyncio.run(generate_audio())
 
-        # 提供试听功能
-        if os.path.exists(output_file):
+        if output_file and os.path.exists(output_file):
+            st.success("语音文件生成完毕！")
             st.audio(output_file)
             st.markdown(f"<p style='font-size: 16px;'><strong>文本:</strong> {input_text}</p>", unsafe_allow_html=True)
 
             # 下载链接
             with open(output_file, 'rb') as f:
                 st.download_button("下载语音文件", f, "output.mp3", "audio/mpeg")
-    else:
-        st.warning("请输入内容。")
 
 # 侧边栏底部反馈信息
 st.sidebar.markdown("---")

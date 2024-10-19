@@ -5,7 +5,6 @@ import streamlit as st
 import zipfile
 import io
 from pydub import AudioSegment
-from pydub.playback import play
 
 # 设置输出目录
 output_dir = "output"
@@ -55,18 +54,8 @@ async def generate_audio_files(words):
             output_file = os.path.join(output_dir, f"{filename}.mp3")
             await text_to_speech(word.strip(), output_file)
             if os.path.exists(output_file):  # 确保文件成功生成
-                audio_files.append(output_file)  # 保存文件
+                audio_files.append(output_file)  # 保存文件路径
     return audio_files
-
-# 合并音频文件
-def merge_audio_files(audio_files):
-    combined = AudioSegment.empty()
-    for audio_file in audio_files:
-        sound = AudioSegment.from_mp3(audio_file)
-        combined += sound + AudioSegment.silent(duration=1000)  # 每个音频之间1秒的间隔
-    combined_file = os.path.join(output_dir, "combined_audio.mp3")
-    combined.export(combined_file, format="mp3")
-    return combined_file
 
 # 开始生成音频文件
 if st.button("生成语音文件"):
@@ -75,7 +64,7 @@ if st.button("生成语音文件"):
         with st.spinner("生成中，请稍候..."):
             import asyncio
             audio_files = asyncio.run(generate_audio_files(words))
-            st.success("语音文件生成完毕！")
+        st.success("语音文件生成完毕！")
 
         # 设置字体大小
         font_size = "16px" if input_type == "正常" else "50px"
@@ -83,9 +72,9 @@ if st.button("生成语音文件"):
         # 提供试听功能和显示文本
         for file in audio_files:
             st.audio(file)
-            st.markdown(f"<p style='font-size: {font_size};'><strong>{os.path.basename(file).replace('_', ' ')}</strong></p>", unsafe_allow_html=True)
+            st.markdown(f"<p style='font-size: {font_size};'><strong>{os.path.basename(file)[:-4]}</strong></p>", unsafe_allow_html=True)
 
-        # 下载所有音频文件的压缩包
+        # 下载链接
         if audio_files:  # 确保有音频文件
             zip_file_path = "audio_files.zip"
             with zipfile.ZipFile(zip_file_path, 'w') as zipf:
@@ -94,11 +83,18 @@ if st.button("生成语音文件"):
             with open(zip_file_path, 'rb') as f:
                 st.download_button("下载所有音频文件", f, "audio_files.zip", "application/zip")
 
-        # 合并音频文件并提供下载
-        combined_audio_file = merge_audio_files(audio_files)
-        with open(combined_audio_file, 'rb') as f:
-            st.download_button("下载为单个音频", f, "combined_audio.mp3", "audio/mpeg")
+            # 合并音频文件并下载
+            def combine_audio_files(files):
+                combined_audio = AudioSegment.empty()
+                for file in files:
+                    audio = AudioSegment.from_mp3(file)
+                    combined_audio += audio + AudioSegment.silent(duration=1000)  # 添加1秒间隔
+                combined_audio.export("combined_audio.mp3", format="mp3")
+                return "combined_audio.mp3"
 
+            combined_file = combine_audio_files(audio_files)
+            with open(combined_file, 'rb') as f:
+                st.download_button("下载为单个音频", f, "combined_audio.mp3", "audio/mp3")
     else:
         st.warning("请输入内容。")
 

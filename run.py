@@ -38,24 +38,22 @@ input_type = st.sidebar.selectbox("选择字号", ["大号", "正常"])
 input_text = st.text_area("请输入内容（每行一个）:")
 
 # 初始化 edge-tts
-async def text_to_speech(text, output_file):
+async def text_to_speech(text):
     try:
         tts = edge_tts.Communicate(text, voice=voice)
-        await tts.save(output_file)
+        return tts.save_to_memory()
     except edge_tts.exceptions.NoAudioReceived:
         st.warning(f"无法生成音频: {text}")
 
-# 处理输入的内容，生成语音文件
-async def generate_audio_files(words):
-    audio_files = []
+# 处理输入的内容，生成单个的音频文件并合并
+async def generate_and_combine_audio_files(words):
+    combined_audio = AudioSegment.empty()
     for word in words:
         if word.strip():  # 确保不处理空行
-            filename = word.strip().replace(" ", "_")  # 替换空格
-            output_file = os.path.join(output_dir, f"{filename}.mp3")
-            await text_to_speech(word.strip(), output_file)
-            if os.path.exists(output_file):  # 确保文件成功生成
-                audio_files.append(output_file)  # 保存文件路径
-    return audio_files
+            audio_bytes = await text_to_speech(word.strip())
+            audio_segment = AudioSegment.from_mp3(io.BytesIO(audio_bytes))
+            combined_audio += audio_segment + AudioSegment.silent(duration=1000)  # 添加1秒间隔
+    return combined_audio
 
 # 开始生成音频文件
 if st.button("生成语音文件"):
@@ -63,37 +61,18 @@ if st.button("生成语音文件"):
         words = input_text.splitlines()
         with st.spinner("生成中，请稍候..."):
             import asyncio
-            audio_files = asyncio.run(generate_audio_files(words))
+            combined_audio = asyncio.run(generate_and_combine_audio_files(words))
         st.success("语音文件生成完毕！")
 
-        # 设置字体大小
-        font_size = "16px" if input_type == "正常" else "50px"
-
         # 提供试听功能和显示文本
-        for file in audio_files:
-            st.audio(file)
-            st.markdown(f"<p style='font-size: {font_size};'><strong>{os.path.basename(file)[:-4]}</strong></p>", unsafe_allow_html=True)
+        for word in words:
+            if word.strip():
+                st.markdown(f"<p style='font-size: 16px;'><strong>{word.strip()}</strong></p>", unsafe_allow_html=True)
 
         # 下载链接
-        if audio_files:  # 确保有音频文件
-            zip_file_path = "audio_files.zip"
-            with zipfile.ZipFile(zip_file_path, 'w') as zipf:
-                for file in audio_files:
-                    zipf.write(file, os.path.basename(file))
-            with open(zip_file_path, 'rb') as f:
-                st.download_button("下载所有音频文件", f, "audio_files.zip", "application/zip")
-
-            # 合并音频文件并下载
-            def combine_audio_files(files):
-                combined_audio = AudioSegment.empty()
-                for file in files:
-                    audio = AudioSegment.from_mp3(file)
-                    combined_audio += audio + AudioSegment.silent(duration=1000)  # 添加1秒间隔
-                combined_audio.export("combined_audio.mp3", format="mp3")
-                return "combined_audio.mp3"
-
-            combined_file = combine_audio_files(audio_files)
-            with open(combined_file, 'rb') as f:
+        if combined_audio:
+            combined_audio.export("combined_audio.mp3", format="mp3")
+            with open("combined_audio.mp3", 'rb') as f:
                 st.download_button("下载为单个音频", f, "combined_audio.mp3", "audio/mp3")
     else:
         st.warning("请输入内容。")

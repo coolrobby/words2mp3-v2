@@ -24,6 +24,7 @@ else:
         "en-US-AriaNeural",
         "en-US-JennyNeural",
         "en-US-GuyNeural",
+        "en-US-AnaNeural",
     ]
 voice = st.sidebar.selectbox("选择音色", voices)
 

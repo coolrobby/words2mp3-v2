@@ -30,6 +30,8 @@ else:
         "en-US-MichelleNeural",
         "en-US-RogerNeural",
         "en-US-SteffanNeural",
+        "en-US-AvaMultilingualNeural",
+        
     ]
 voice = st.sidebar.selectbox("选择音色", voices)
 

@@ -7,7 +7,7 @@ output_dir = "output"
 os.makedirs(output_dir, exist_ok=True)
 
 # Streamlit 页面标题
-st.sidebar.title("文本转语音")
+st.sidebar.title("《Hello,广西》文本转语音")
 
 # 选择语言
 language = st.sidebar.selectbox("选择语言", ["中文", "英文"])
@@ -73,4 +73,4 @@ if st.button("生成语音文件"):
 
 # 侧边栏底部反馈信息
 st.sidebar.markdown("---")
-st.sidebar.write(" 《Hello,广西》小工具")
+st.sidebar.write(" Made by:《Hello,广西》课程组")

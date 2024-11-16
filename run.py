@@ -73,4 +73,4 @@ if st.button("生成语音文件"):
 
 # 侧边栏底部反馈信息
 st.sidebar.markdown("---")
-st.sidebar.write(" Made by:《Hello,广西》课程组")
+st.sidebar.write("www.helloguangxi.online")

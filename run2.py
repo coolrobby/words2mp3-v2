@@ -2,6 +2,7 @@ import os
 import edge_tts
 import streamlit as st
 from pydub import AudioSegment
+import io
 
 # 设置输出目录
 output_dir = "output"
@@ -47,8 +48,15 @@ async def text_to_speech(text, voice, rate):
     try:
         rate_str = str(rate) + "%"
         tts = edge_tts.Communicate(text, voice=voice, rate=rate_str)
-        audio_file = await tts.save(None)  # 保存到内存，不直接存储到磁盘
-        return audio_file
+        
+        # 获取音频流并保存到内存
+        audio_stream = io.BytesIO()
+        await tts.save(audio_stream)  # 保存到内存
+        audio_stream.seek(0)  # 重置流的位置
+        
+        # 使用 pydub 读取音频流
+        audio = AudioSegment.from_file(audio_stream, format="mp3")
+        return audio
     except edge_tts.exceptions.NoAudioReceived:
         st.warning(f"无法生成音频: {text}")
         return None

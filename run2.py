@@ -1,6 +1,7 @@
 import os
 import edge_tts
 import streamlit as st
+from pydub import AudioSegment
 
 # 设置输出目录
 output_dir = "output"
@@ -42,15 +43,15 @@ rate = st.sidebar.slider("语速调节", min_value=-100, max_value=100, value=0,
 input_text = st.text_area("请输入内容：")
 
 # 初始化 edge-tts
-async def text_to_speech(text, output_file, voice):
+async def text_to_speech(text, voice, rate):
     try:
-        # 将 rate 转换为百分比格式
         rate_str = str(rate) + "%"
-        # 使用正确格式的 rate 参数
         tts = edge_tts.Communicate(text, voice=voice, rate=rate_str)
-        await tts.save(output_file)
+        audio_file = await tts.save(None)  # 保存到内存，不直接存储到磁盘
+        return audio_file
     except edge_tts.exceptions.NoAudioReceived:
         st.warning(f"无法生成音频: {text}")
+        return None
 
 # 生成语音文件的函数
 async def generate_audio():
@@ -58,20 +59,35 @@ async def generate_audio():
         # 将输入文本按行拆分
         lines = input_text.split("\n")
         
-        # 生成的音频文件路径
-        output_file = os.path.join(output_dir, "output.mp3")
+        # 初始化音频合并
+        combined_audio = None
 
-        # 第一遍用第一个音色
+        # 逐行生成音频并合并
         for line in lines:
             if line.strip():
-                await text_to_speech(line, output_file, voice1)
-        
-        # 第二遍用第二个音色
-        for line in lines:
-            if line.strip():
-                await text_to_speech(line, output_file, voice2)
+                # 第一遍用第一个音色
+                audio1 = await text_to_speech(line, voice1, rate)
+                if audio1:
+                    if combined_audio is None:
+                        combined_audio = audio1
+                    else:
+                        combined_audio += audio1
 
-        return output_file
+                # 第二遍用第二个音色
+                audio2 = await text_to_speech(line, voice2, rate)
+                if audio2:
+                    if combined_audio is None:
+                        combined_audio = audio2
+                    else:
+                        combined_audio += audio2
+
+        if combined_audio:
+            output_file = os.path.join(output_dir, "output.mp3")
+            combined_audio.export(output_file, format="mp3")  # 将合并后的音频导出到文件
+            return output_file
+        else:
+            st.warning("无法生成音频。")
+            return None
     else:
         st.warning("请输入内容。")
         return None

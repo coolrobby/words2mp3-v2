@@ -43,8 +43,10 @@ input_text = st.text_area("请输入内容：")
 # 初始化 edge-tts
 async def text_to_speech(text, output_file):
     try:
-        # 使用 rate 参数来控制语速
-        tts = edge_tts.Communicate(text, voice=voice, rate=str(rate))
+        # 将 rate 转换为百分比格式
+        rate_str = str(rate) + "%"
+        # 使用正确格式的 rate 参数
+        tts = edge_tts.Communicate(text, voice=voice, rate=rate_str)
         await tts.save(output_file)
     except edge_tts.exceptions.NoAudioReceived:
         st.warning(f"无法生成音频: {text}")

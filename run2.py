@@ -32,7 +32,8 @@ else:
         "en-US-SteffanNeural",
         "en-US-AvaMultilingualNeural",
     ]
-voice = st.sidebar.selectbox("选择音色", voices)
+voice1 = st.sidebar.selectbox("选择第一音色", voices)
+voice2 = st.sidebar.selectbox("选择第二音色", voices)
 
 # 语速设置
 rate = st.sidebar.slider("语速调节", min_value=-100, max_value=100, value=0, step=10)
@@ -41,7 +42,7 @@ rate = st.sidebar.slider("语速调节", min_value=-100, max_value=100, value=0,
 input_text = st.text_area("请输入内容：")
 
 # 初始化 edge-tts
-async def text_to_speech(text, output_file):
+async def text_to_speech(text, output_file, voice):
     try:
         # 将 rate 转换为百分比格式
         rate_str = str(rate) + "%"
@@ -54,8 +55,22 @@ async def text_to_speech(text, output_file):
 # 生成语音文件的函数
 async def generate_audio():
     if input_text:
+        # 将输入文本按行拆分
+        lines = input_text.split("\n")
+        
+        # 生成的音频文件路径
         output_file = os.path.join(output_dir, "output.mp3")
-        await text_to_speech(input_text, output_file)
+
+        # 第一遍用第一个音色
+        for line in lines:
+            if line.strip():
+                await text_to_speech(line, output_file, voice1)
+        
+        # 第二遍用第二个音色
+        for line in lines:
+            if line.strip():
+                await text_to_speech(line, output_file, voice2)
+
         return output_file
     else:
         st.warning("请输入内容。")

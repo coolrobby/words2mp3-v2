@@ -31,9 +31,13 @@ else:
         "en-US-RogerNeural",
         "en-US-SteffanNeural",
         "en-US-AvaMultilingualNeural",
-        
     ]
 voice = st.sidebar.selectbox("选择音色", voices)
+
+# 语速设置
+rate = st.sidebar.slider("语速调节", min_value=-100, max_value=100, value=0, step=10)
+# 每个单词的读遍数设置
+prosody_count = st.sidebar.slider("每个单词读的遍数", min_value=1, max_value=5, value=1, step=1)
 
 # 用户输入内容
 input_text = st.text_area("请输入内容：")
@@ -41,7 +45,13 @@ input_text = st.text_area("请输入内容：")
 # 初始化 edge-tts
 async def text_to_speech(text, output_file):
     try:
-        tts = edge_tts.Communicate(text, voice=voice)
+        # 调整语速和重复次数
+        tts = edge_tts.Communicate(
+            text, 
+            voice=voice, 
+            rate=rate, 
+            prosody={"rate": str(rate), "contour": str(prosody_count)}  # prosody 用来控制重复次数
+        )
         await tts.save(output_file)
     except edge_tts.exceptions.NoAudioReceived:
         st.warning(f"无法生成音频: {text}")

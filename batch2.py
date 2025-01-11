@@ -80,17 +80,21 @@ def process_excel_and_generate_audio(file_path, selected_groups=None):
         for group_name, group_data in groups:
             # 如果未选择组，则默认生成所有组的音频
             if selected_groups is None or group_name in selected_groups:
-                words = group_data.iloc[:, 2].tolist()  # 获取第三列单词
-                output_file = asyncio.run(generate_audio_for_group(group_name, words))
-                if output_file and os.path.exists(output_file):
-                    audio_files.append(output_file)
-                    # 显示组名、单词和解释
-                    st.subheader(f"组名: {group_name}")
-                    for _, row in group_data.iterrows():
-                        st.markdown(f"<h2>{row[2]}</h2>", unsafe_allow_html=True)  # 单词
-                        st.markdown(f"<p>{row[3]}</p><hr>", unsafe_allow_html=True)  # 解释
-                    st.audio(output_file, format='audio/mp3')
-                    st.download_button(f"下载 {group_name} 语音文件", output_file, f"{group_name}.mp3", "audio/mpeg")
+                # 检查是否有足够的列
+                if group_data.shape[1] >= 4:  # 至少有 4 列（组名、其它、单词、解释）
+                    words = group_data.iloc[:, 1].tolist()  # 使用第二列数据生成语音
+                    output_file = asyncio.run(generate_audio_for_group(group_name, words))
+                    if output_file and os.path.exists(output_file):
+                        audio_files.append(output_file)
+                        # 显示组名、单词和解释
+                        st.subheader(f"组名: {group_name}")
+                        for _, row in group_data.iterrows():
+                            st.markdown(f"<h2>{row[2]}</h2>", unsafe_allow_html=True)  # 第三列显示单词
+                            st.markdown(f"<p>{row[3]}</p><hr>", unsafe_allow_html=True)  # 第四列显示解释
+                        st.audio(output_file, format='audio/mp3')
+                        st.download_button(f"下载 {group_name} 语音文件", output_file, f"{group_name}.mp3", "audio/mpeg")
+                else:
+                    st.warning(f"组 '{group_name}' 数据列不足，无法生成语音。")
         return audio_files
     return []
 

@@ -15,8 +15,8 @@ st.sidebar.title("Words2mp3")
 
 # 默认使用英文语音
 voices = [
-    "en-US-AvaMultilingualNeural",  # 默认选择此音色
-    "en-US-AriaNeural",
+    "en-US-AriaNeural",  # 默认选择此音色
+    "en-US-AvaMultilingualNeural",
     "en-US-JennyNeural",
     "en-US-GuyNeural",
     "en-US-AnaNeural",
@@ -112,5 +112,5 @@ if st.button("生成语音文件"):
 
 # 侧边栏底部反馈信息
 st.sidebar.markdown("---")
-st.sidebar.write("<h2> 使用说明</h2><p>按组生成单词读音，每个单词读3遍，每组一个mp3文件。选择音色，选择语速后，点击生成语音即可。可以单独下载每个音频，也可以打包下载。</p><p>Made by：川哥</p>", unsafe_allow_html=True)
+st.sidebar.write("<h2> 使用说明</h2><p>按组生成单词读音，每个单词读3遍，每组一个mp3文件。选择音色，选择语速后，点击生成语音即可。可以单独下载每个音频，也可以打包下载。川哥专用。</p><p>Made by：川哥</p>", unsafe_allow_html=True)
 

@@ -11,7 +11,7 @@ output_dir = "output"
 os.makedirs(output_dir, exist_ok=True)
 
 # Streamlit 页面标题
-st.sidebar.title("川哥TTS")
+st.sidebar.title("Words2mp3")
 
 # 默认使用英文语音
 voices = [
@@ -112,4 +112,4 @@ if st.button("生成语音文件"):
 
 # 侧边栏底部反馈信息
 st.sidebar.markdown("---")
-st.sidebar.write("川哥做的一个小工具")
+st.sidebar.write("川哥做的小工具\n没啥用随便玩玩")

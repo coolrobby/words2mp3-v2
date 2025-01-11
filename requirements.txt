@@ -2,3 +2,4 @@ edge-tts
 streamlit
 pydub
 ffmpeg
+openpyxl

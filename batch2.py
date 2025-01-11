@@ -146,4 +146,4 @@ if __name__ == "__main__":
 
 # 侧边栏底部反馈信息
 st.sidebar.markdown("---")
-st.sidebar.write("<h2> 使用说明</h2><p>按组生成单词读音，每个单词读3遍，每组一个mp3文件。选择音色，选择语速后，点击生成语音即可。可以单独下载每个音频，也可以打包下载。川哥专用。</p><p>Made by：川哥</p>", unsafe_allow_html=True)
+st.sidebar.write("<h2> 使用说明</h2><p>一看不就会了？而且也没打算给你用。</p><p>Made by：川哥</p>", unsafe_allow_html=True)

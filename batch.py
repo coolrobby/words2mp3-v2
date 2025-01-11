@@ -112,4 +112,5 @@ if st.button("生成语音文件"):
 
 # 侧边栏底部反馈信息
 st.sidebar.markdown("---")
-st.sidebar.write("川哥做的小工具\n没啥用随便玩玩")
+st.sidebar.write("www.helloguangxi.online<br>欢迎使用文本转语音工具！", unsafe_allow_html=True)
+

@@ -1,4 +1,4 @@
-import asyncio  # Add this import statement at the top of your script
+import asyncio  # 确保导入 asyncio
 import os
 import pandas as pd
 import edge_tts
@@ -11,35 +11,27 @@ output_dir = "output"
 os.makedirs(output_dir, exist_ok=True)
 
 # Streamlit 页面标题
-st.sidebar.title("《Hello,广西》文本转语音")
+st.sidebar.title("川哥TTS")
 
-# 选择语言
-language = st.sidebar.selectbox("选择语言", ["中文", "英文"])
+# 默认使用英文语音
+voices = [
+    "en-US-AvaMultilingualNeural",  # 默认选择此音色
+    "en-US-AriaNeural",
+    "en-US-JennyNeural",
+    "en-US-GuyNeural",
+    "en-US-AnaNeural",
+    "en-US-ChristopherNeural",
+    "en-US-EricNeural",
+    "en-US-MichelleNeural",
+    "en-US-RogerNeural",
+    "en-US-SteffanNeural",
+]
 
-# 根据选择的语言提供相应的音色
-if language == "中文":
-    voices = [
-        "zh-CN-YunyangNeural",
-        "zh-CN-XiaoyiNeural",
-        "zh-CN-XiaoxiaoNeural",
-    ]
-else:
-    voices = [
-        "en-US-AriaNeural",
-        "en-US-JennyNeural",
-        "en-US-GuyNeural",
-        "en-US-AnaNeural",
-        "en-US-ChristopherNeural",
-        "en-US-EricNeural",
-        "en-US-MichelleNeural",
-        "en-US-RogerNeural",
-        "en-US-SteffanNeural",
-        "en-US-AvaMultilingualNeural",
-    ]
+# 语音选择
 voice = st.sidebar.selectbox("选择音色", voices)
 
-# 语速设置
-rate = st.sidebar.slider("语速调节", min_value=-100, max_value=100, value=0, step=10)
+# 语速设置，默认值为 -20%
+rate = st.sidebar.slider("语速调节", min_value=-100, max_value=100, value=-30, step=10)
 
 # 读取 Excel 文件
 def read_excel(file_path):
@@ -54,11 +46,14 @@ def read_excel(file_path):
 # 初始化 edge-tts
 async def text_to_speech(text, output_file):
     try:
-        rate_str = str(rate) + "%"
+        # 将 rate 转换为百分比格式，并确保它符合 edge_tts 的要求（例如 +10%, -10% 等）
+        rate_str = f"{rate}%"  # 直接将 rate 加上百分号
         tts = edge_tts.Communicate(text, voice=voice, rate=rate_str)
         await tts.save(output_file)
     except edge_tts.exceptions.NoAudioReceived:
         st.warning(f"无法生成音频: {text}")
+    except ValueError as e:
+        st.error(f"生成语音时出错: {e}")
 
 # 为每组生成音频文件的函数
 async def generate_audio_for_group(group_name, words):

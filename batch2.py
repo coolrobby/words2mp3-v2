@@ -5,7 +5,6 @@ import edge_tts
 import streamlit as st
 import zipfile
 from io import BytesIO
-import pyperclip  # 用于复制内容到剪贴板
 
 # 设置输出目录
 output_dir = "output"
@@ -72,37 +71,30 @@ def create_zip_file(files):
     return zip_buffer
 
 # 读取 list.xlsx 文件并生成音频
-def process_excel_and_generate_audio(file_path, selected_group):
+def process_excel_and_generate_audio(file_path, selected_groups=None):
     df = read_excel(file_path)
     if df is not None:
         # 获取每个组及对应的单词和解释
         groups = df.groupby(df.columns[0])
         audio_files = []
-        if selected_group in groups:
-            group_data = groups.get_group(selected_group)
-            # 检查是否有足够的列
-            if group_data.shape[1] >= 4:  # 至少有 4 列（组名、其它、单词、解释）
-                words = group_data.iloc[:, 1].tolist()  # 使用第二列数据生成语音
-                output_file = asyncio.run(generate_audio_for_group(selected_group, words))
-                if output_file and os.path.exists(output_file):
-                    audio_files.append(output_file)
-                    # 显示组名、单词和解释
-                    st.subheader(f"组名: {selected_group}")
-                    content_to_copy = ""
-                    for _, row in group_data.iterrows():
-                        word = row[2]  # 第三列显示单词
-                        explanation = row[3]  # 第四列显示解释
-                        st.markdown(f"<h2>{word}</h2>", unsafe_allow_html=True)
-                        st.markdown(f"<p>{explanation}</p><hr>", unsafe_allow_html=True)
-                        content_to_copy += f"单词: {word}\n解释: {explanation}\n\n"
-                    
-                    # “复制”按钮
-                    if st.button("复制"):
-                        pyperclip.copy(content_to_copy)  # 复制内容到剪贴板
-                        st.success("内容已复制到剪贴板！")
-                    
-                    st.audio(output_file, format='audio/mp3')
-                    st.download_button(f"下载 {selected_group} 语音文件", output_file, f"{selected_group}.mp3", "audio/mpeg")
+        for group_name, group_data in groups:
+            # 如果未选择组，则默认生成所有组的音频
+            if selected_groups is None or group_name in selected_groups:
+                # 检查是否有足够的列
+                if group_data.shape[1] >= 4:  # 至少有 4 列（组名、其它、单词、解释）
+                    words = group_data.iloc[:, 1].tolist()  # 使用第二列数据生成语音
+                    output_file = asyncio.run(generate_audio_for_group(group_name, words))
+                    if output_file and os.path.exists(output_file):
+                        audio_files.append(output_file)
+                        # 显示组名、单词和解释
+                        st.subheader(f"组名: {group_name}")
+                        for _, row in group_data.iterrows():
+                            st.markdown(f"<h2>{row[2]}</h2>", unsafe_allow_html=True)  # 第三列显示单词
+                            st.markdown(f"<p>{row[3]}</p><hr>", unsafe_allow_html=True)  # 第四列显示解释
+                        st.audio(output_file, format='audio/mp3')
+                        st.download_button(f"下载 {group_name} 语音文件", output_file, f"{group_name}.mp3", "audio/mpeg")
+                else:
+                    st.warning(f"组 '{group_name}' 数据列不足，无法生成语音。")
         return audio_files
     return []
 
@@ -120,25 +112,35 @@ if __name__ == "__main__":
     
     # 显示组选择
     available_groups = display_group_list(file_path)
-    selected_group = st.sidebar.selectbox("选择组", available_groups, index=0)  # 只能选择一个组
+    select_all = st.sidebar.checkbox("全选", value=False)  # 添加全选复选框
+    if select_all:
+        selected_groups = available_groups  # 如果全选勾选，选择所有组
+    else:
+        selected_groups = st.sidebar.multiselect("选择组", available_groups)  # 多选框供用户选择
     
-    if selected_group:
-        # 自动显示内容和生成语音
-        with st.spinner("加载中..."):
-            audio_files = process_excel_and_generate_audio(file_path, selected_group)
+    # 显示组选择的按钮
+    if selected_groups:
+        if st.button("显示选择的组"):
+            with st.spinner("加载中..."):
+                # 显示每个选择的组内容
+                audio_files = process_excel_and_generate_audio(file_path, selected_groups)
+    else:
+        st.warning("请选择组以显示内容。")
 
     # 生成按钮
-    if selected_group and st.button("生成语音文件"):
+    if selected_groups and st.button("生成语音文件"):
         with st.spinner("生成中，请稍候..."):
             if os.path.exists(file_path):
-                audio_files = process_excel_and_generate_audio(file_path, selected_group)
+                audio_files = process_excel_and_generate_audio(file_path, selected_groups)
                 
                 if audio_files:
                     st.success("语音文件生成完毕！")
 
-                # 提供下载 ZIP 文件（如果有多个文件）
-                zip_file = create_zip_file(audio_files)
-                st.download_button("下载所有语音文件 (ZIP)", zip_file, "audio_files.zip", "application/zip")
+                    # 提供批量下载 ZIP 文件
+                    zip_file = create_zip_file(audio_files)
+                    st.download_button("下载所有语音文件 (ZIP)", zip_file, "audio_files.zip", "application/zip")
+                else:
+                    st.warning("未能生成音频文件，请检查 Excel 文件内容。")
             else:
                 st.warning("找不到 list.xlsx 文件，请确保文件存在。")
 

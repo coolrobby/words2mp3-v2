@@ -108,9 +108,23 @@ if __name__ == "__main__":
     
     # 显示组选择
     available_groups = display_group_list(file_path)
-    selected_groups = st.sidebar.multiselect("选择组", available_groups, default=available_groups)
+    select_all = st.sidebar.checkbox("全选", value=False)  # 添加全选复选框
+    if select_all:
+        selected_groups = available_groups  # 如果全选勾选，选择所有组
+    else:
+        selected_groups = st.sidebar.multiselect("选择组", available_groups)  # 多选框供用户选择
     
-    if st.button("生成语音文件"):
+    # 显示组选择的按钮
+    if selected_groups:
+        if st.button("显示选择的组"):
+            with st.spinner("加载中..."):
+                # 显示每个选择的组内容
+                audio_files = process_excel_and_generate_audio(file_path, selected_groups)
+    else:
+        st.warning("请选择组以显示内容。")
+
+    # 生成按钮
+    if selected_groups and st.button("生成语音文件"):
         with st.spinner("生成中，请稍候..."):
             if os.path.exists(file_path):
                 audio_files = process_excel_and_generate_audio(file_path, selected_groups)

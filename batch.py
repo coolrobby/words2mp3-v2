@@ -1,3 +1,4 @@
+import asyncio  # Add this import statement at the top of your script
 import os
 import pandas as pd
 import edge_tts
